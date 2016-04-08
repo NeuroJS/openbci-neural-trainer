@@ -20,7 +20,7 @@ node trainer exercise
 To interpret input data based on previously saved neural network state located at ./neural-network/state.json, run:
 
 ```bash
-node trainer interpret
+node trainer interpret for [time_milliseconds]
 ```
 
 To test input data based on previously saved neural network state located at ./neural-network/state.json, run:

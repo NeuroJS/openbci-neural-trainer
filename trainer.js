@@ -7,6 +7,7 @@ var jsonfile = require('jsonfile');
 var OpenBCIBoard = require('openbci-sdk');
 
 var randomExperiment;
+var trainedNetwork;
 var channelsToFilter = []; // Add channels to filter. Eg.: ['2','4']
 var networkStateFilePath = path.join(__dirname, '/neural-network/state.json');
 var experimentFilesPath = path.join(__dirname, '/data/*.json');
@@ -36,8 +37,12 @@ glob(experimentFilesPath, (error, experimentFiles) => {
             test(testData.input);
         }
         if (action === 'interpret') {
-            board.autoFindOpenBCIBoard()
-                .then(onBoardFind);
+            jsonfile.readFile(networkStateFilePath, (error, networkState) => {
+                trainedNetwork = new brain.NeuralNetwork().fromJSON(networkState);
+                board.autoFindOpenBCIBoard()
+                    .then(onBoardFind);
+            });
+
         }
     });
 });
@@ -60,6 +65,7 @@ function onBoardConnect () {
 function onBoardReady () {
     board.streamStart();
     board.on('sample', interpret);
+    setTimeout(disconnectBoard, argv._[2]);
 }
 
 /**
@@ -116,11 +122,8 @@ function interpret (sample) {
     sample.channelData.forEach((channel, index) => {
         output['' + (index + 1)] = channel;
     });
-    jsonfile.readFile(networkStateFilePath, (error, networkState) => {
-        var net = new brain.NeuralNetwork().fromJSON(networkState);
-        var result = net.run(output);
-        console.log('most accurate:', getMostAccurate(result).keyword);
-    });
+    var result = trainedNetwork.run(output);
+    console.log('most accurate:', getMostAccurate(result).keyword);
 }
 
 /**
@@ -189,4 +192,17 @@ function getTestResults (output) {
         console.log('output', output);
         console.log('TEST FAILED');
     }
+}
+
+/**
+ * disconnectBoard
+ */
+function disconnectBoard () {
+    board.streamStop()
+        .then(function () {
+            setTimeout(function () {
+                board.disconnect();
+                console.log('board disconnected');
+            }, 50);
+        });
 }
