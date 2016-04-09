@@ -144,9 +144,16 @@ function getPatternsFromExperiments(experiments) {
  */
 function filterChannelsFromPatterns (patterns, channels) {
     patterns.forEach((pattern) => {
+        var numsArray = [];
+        Object.keys(pattern.input).forEach((index) => {
+            numsArray.push(pattern.input[index]);
+        });
+        var lowestChannel = Math.min.apply(Math, numsArray);
+        var highestChannel = Math.max.apply(Math, numsArray);
+        console.log(lowestChannel, highestChannel);
         Object.keys(pattern.input).forEach((channel) => {
             // Make all numbers positive
-            pattern.input[channel] = Math.abs(pattern.input[channel]);
+            pattern.input[channel] = (pattern.input[channel] - lowestChannel) / (highestChannel - lowestChannel);
             if (channels.indexOf(channel) !== -1) {
                 delete pattern.input[channel];
             }
